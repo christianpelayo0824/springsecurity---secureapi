@@ -12,14 +12,20 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+	private static final String ROLE_ADMIN = "ROLE_ADMIN";
+	private static final String ROLE_USER = "ROLE_USER";
+
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		auth
 			.inMemoryAuthentication()
 			.withUser("user")
 			.password("{noop}user")
-			.authorities("ROLE_USER");
-			
+			.authorities(ROLE_USER)
+			.and()
+			.withUser("admin")
+			.password("{noop}admin")
+			.authorities(ROLE_ADMIN);
 	}
 
 	@Override
@@ -31,11 +37,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	protected void configure(HttpSecurity http) throws Exception {
 		http
 			.authorizeRequests()
-			.antMatchers("/").permitAll()
-		.and()
-			.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+			.antMatchers("/", "/index.html").permitAll()
+			.antMatchers("api/user/**").hasAuthority(ROLE_USER)
+			.antMatchers("api/admin/**").hasAuthority(ROLE_ADMIN)
+			.anyRequest().fullyAuthenticated()
 		.and()
 			.httpBasic()
+		.and()
+			.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 		.and()
 			.csrf().disable();
 	}
